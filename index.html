@@ -13,20 +13,143 @@
       }
       .wrap {
         display: flex;
+        flex-wrap: wrap;
         justify-content: center;
         align-items: center;
         max-width: 80%;
       }
+      table {
+      border: 1px solid #ccc;
+      border-collapse: collapse;
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      table-layout: fixed;
+    }
+
+    table caption {
+      font-size: 1.5em;
+      margin: .5em 0 .75em;
+    }
+
+    table tr {
+      background-color: #f8f8f8;
+      border: 1px solid #ddd;
+      padding: .35em;
+    }
+
+    table th,
+    table td {
+      padding: .625em;
+      text-align: center;
+    }
+
+    table th {
+      font-size: .85em;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+    #table_container{
+      background: rgba(0,0,0,0.3);
+      position: absolute;
+      padding: 80px;
+      width: 50%;
+      transition: all 0.3s;
+    }
+    .btn{
+      background: transparent;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+    }
+    .btn:hover{
+      cursor: pointer;
+      background: rgba(0,0,0,0.1);
+    }
+    .btn:focus{
+      outline: none;
+    }
+    #open-button{
+      position: absolute;
+      top: 50px;
+      left: 50px;
+    }
+
+    @media screen and (max-width: 600px) {
+      table {
+        border: 0;
+      }
+
+      table caption {
+        font-size: 1.3em;
+      }
+      
+      table thead {
+        border: none;
+        clip: rect(0 0 0 0);
+        height: 1px;
+        margin: -1px;
+        overflow: hidden;
+        padding: 0;
+        position: absolute;
+        width: 1px;
+      }
+      
+      table tr {
+        border-bottom: 3px solid #ddd;
+        display: block;
+        margin-bottom: .625em;
+      }
+      
+      table td {
+        border-bottom: 1px solid #ddd;
+        display: block;
+        font-size: .8em;
+        text-align: right;
+      }
+      
+      table td::before {
+        /*
+        * aria-label has no advantage, it won't be read inside a table
+        content: attr(aria-label);
+        */
+        content: attr(data-label);
+        float: left;
+        font-weight: bold;
+        text-transform: uppercase;
+      }
+      
+      table td:last-child {
+        border-bottom: 0;
+      }
+    }
     </style>
 </head>
 <body>
+  <button id="open-button" class="btn">form</button>
   <div class="wrap">
     <canvas id="myChart" width="1200" height="600"></canvas>
+    <div id="table_container">
+      <table id="table">
+        <thead>
+          <tr>
+            <td>Year</td>
+            <td>Highest</td>
+            <td>Lowest</td>
+            <td>Difference</td>
+            <td>Average</td>
+          </tr>
+        </thead>
+      </table>
+    </div>
   </div>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
     <script src='https://cdnjs.cloudflare.com/ajax/libs/axios/0.9.1/axios.js'></script>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.js'></script>
     <script>
       let data = {};
+      let endpoint = []
       axios.get('./data.json')
         .then(res => {
           data = res.data
@@ -81,6 +204,15 @@
                     ],
                     borderWidth: 2
                 },
+                {
+                    label: '2021',
+                    data:[],
+                    backgroundColor: 'transparent',
+                    borderColor: [
+                        '#000'
+                    ],
+                    borderWidth: 2
+                },
               ]
             },
             options: {
@@ -102,14 +234,32 @@
               const dataset = myLineChart.data.datasets[i]
               for(let j=0;j<data[dataset.label].length;j++){
                 dataset.data.push(data[dataset.label][j]['最終價'])
+                endpoint.push(data[dataset.label][j]['最終價'])
               }
+              endpoint.sort((a,b)=> {
+                return a-b
+              })
+              let total = endpoint.reduce((accu, current) => accu + current)
+              $('#table').append(`
+                  <tr>
+                  <td>${dataset.label}</td>
+                  <td>${endpoint[endpoint.length-1]}</td>
+                  <td>${endpoint[0]}</td>
+                  <td>${endpoint[endpoint.length-1] - endpoint[0]}</td>
+                  <td>${(total / endpoint.length).toFixed(3)}</td>
+                  </tr>
+                `)
+              endpoint = []
             }
             myLineChart.update()
           })
         .catch(err => {
           console.log(err)
         })
-      
+      $('#table_container').hide()
+      $('#open-button').click(function() {
+        $('#table_container').toggle()
+      })
     </script>
 </body>
 </html>
